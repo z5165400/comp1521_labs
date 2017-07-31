@@ -2,8 +2,8 @@
 // COMP1521 17s2 Week02 Lab Exercise
 // Written by John Shepherd, July 2017
 
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef BITS_H
+#define BITS_H
 
 typedef struct BitsRep *Bits;
 
