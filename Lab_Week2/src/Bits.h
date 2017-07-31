@@ -10,7 +10,7 @@ typedef struct BitsRep *Bits;
 // make a new zero'd Bits with N bits
 Bits makeBits(int N);
 // release space used by Bits
-void  freeBits(Bits b);
+void freeBits(Bits b);
 // bit-wise AND of two Bits a, b
 void andBits(Bits a, Bits b, Bits res);
 // bit-wise OR of two Bits a, b

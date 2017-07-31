@@ -12,12 +12,12 @@
 #define  DEFAULT_NBITS 64
 #define  MAX_LINE      500
 
-#define  bad2Args(a,b,c,d)  ((c = opIndex(a)) < 0 || (d = opIndex(b)) < 0)
+//#define  bad2Args(a,b,c,d)  ((c = opIndex(a)) < 0 || (d = opIndex(b)) < 0)
 
 void processOptions(int, char **, int *);
 int  argIndex(char name);
 int  getArgs(char a, int *b, char c, int *d, char e, int *f);
-void printHelp();
+void printHelp(void);
 void trim(char *);
 
 int main(int argc, char *argv[])
