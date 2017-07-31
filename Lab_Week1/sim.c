@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
       currentTime++;
    }
 
+   freePrinters(pool);
    return EXIT_SUCCESS;
 }
 

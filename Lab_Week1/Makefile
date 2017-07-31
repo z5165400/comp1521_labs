@@ -1,4 +1,4 @@
-CC=dcc
+CC=clang
 CFLAGS=-g
 
 sim : sim.o Printers.o Queue.o
@@ -10,4 +10,5 @@ Queue.o : Queue.c Queue.h
 
 clean :
 	rm -f core sim sim.o Printers.o Queue.o
+	rm -r *.dSYM
 

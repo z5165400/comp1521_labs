@@ -38,7 +38,6 @@ flags = [
 '-g',
 '-Isrc',
 '-Wall',
-'-lgmp',
 '-Wextra',
 #'-Werror',
 #'-Wno-long-long',
