@@ -146,13 +146,23 @@ void rightShiftBits(Bits b, int shift, Bits res)
 // copy value from one Bits object to another
 void setBitsFromBits(Bits from, Bits to)
 {
-   // TODO
+    // TODO: Don't make this assumption
+    assert(from->nwords == to->nwords);
+
+    // Counting down, because why not
+    // This could also be done with a memcpy I guess?
+    // I wonder if it would make a difference
+    // TODO: Benchmarks
+    for(int i = from->nwords; i >= 0; i--) {
+        to->words[i] = from->words[i];
+    }
 }
 
 // assign a bit-string (sequence of 0's and 1's) to Bits
 // if the bit-string is longer than the size of Bits, truncate higher-order bits
 void setBitsFromString(Bits b, char *bitseq)
 {
+#if 0
     int i;
     int j = b->nwords - 1;
     int k = (int)strlen(bitseq);
@@ -175,6 +185,25 @@ void setBitsFromString(Bits b, char *bitseq)
         if(i != k && i % BITS_PER_WORD == 0) j--;
     }
     //printf("\n");
+#endif
+
+    int i = strlen(bitseq) - 1;
+    int j = b->nwords * BITS_PER_WORD - 1;
+
+    memset(b->words, 0, sizeof(unsigned int) * b->nwords);
+
+    //printf("%s\n", bitseq);
+
+    // I don't really like simultaneous counters, but it works
+    // TODO: Reconsider this, try to find a better way
+    // i is already initialised above
+    for(; i>= 0 && j >= 0; i--, j--) {
+        unsigned int newBit = 0;
+        if(bitseq[i] == '1') newBit = 1;
+
+        //printf("Place %d << %d into word %d\n", newBit, BITS_PER_WORD - (j % BITS_PER_WORD) - 1, j / BITS_PER_WORD);
+        b->words[j / BITS_PER_WORD] |= newBit << (BITS_PER_WORD - (j % BITS_PER_WORD) - 1);
+    }
 }
 
 // display a Bits value as sequence of 0's and 1's
@@ -195,5 +224,4 @@ void showBits(Bits b)
             printf("%u", !!(b->words[i] & mask));
         }
     }
-    printf("\n");
 }
