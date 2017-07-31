@@ -1,7 +1,7 @@
 // ADT for Bit-strings
 // COMP1521 17s2 Week02 Lab Exercise
 // Written by John Shepherd, July 2017
-// Modified by ...
+// Modified by Andrew Walls, July 2017
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,7 +59,35 @@ void  freeBits(Bits b)
 // store result in res Bits
 void andBits(Bits a, Bits b, Bits res)
 {
-   // TODO
+    // Ensure the two AND Bits are of equal length
+    assert(a->nwords == b->nwords);
+    // Ensure the result Bits is equal length or larger, to contain result
+    assert(res->nwords >= a->nwords);
+
+    showBits(a);
+    printf("AND\n");
+    showBits(b);
+
+    int i = 0;
+
+    // i is already initialised
+    // Zero out any overhanging bits of the result
+    for(i = 0; i < (res->nwords - a->nwords); i++) {
+        res->words[i] = 0;
+    }
+
+    // i is, again, already initialised, and contains the index of the
+    // first word which a, b and res have in common
+    // Which we'll store for later
+    int offset = i;
+    for(; i < res->nwords; i++) {
+        struct BitsRep bitsA = { .nwords = 1, .words = &a->words[i - offset] };
+        struct BitsRep bitsB = { .nwords = 1, .words = &b->words[i - offset] };
+        showBits(&bitsA);
+        printf("AND\n");
+        showBits(&bitsB);
+        res->words[i] = a->words[i - offset] & b->words[i - offset];
+    }
 }
 
 // form bit-wise OR of two Bits a,b
@@ -98,11 +126,51 @@ void setBitsFromBits(Bits from, Bits to)
 // if the bit-string is longer than the size of Bits, truncate higher-order bits
 void setBitsFromString(Bits b, char *bitseq)
 {
-   // TODO
+    int i;
+    int j = b->nwords - 1;
+    int k = (int)strlen(bitseq);
+
+    printf("%s\n", bitseq);
+
+    // Reinitialise b to 0, in case it's already been used
+    memset(b->words, 0, sizeof(unsigned int) * b->nwords);
+
+    // Loop from the end of the string towards the start, terminating
+    // when either the end of the string or the end of the Bits array is
+    // reached
+    // i is already initalised
+    for(i = k; i >= 0 && j >= 0; i--) {
+        // Prepare an 32-bit integer to use as a mask
+        unsigned int newBit = 0;
+        // Set LSB of newBit if the character is 1
+        if(bitseq[i] == '1') newBit = 1;
+        //printf("%#010x\n", newBit << (31 - i));
+        //printf("%d\n", j);
+        // Prepare bitmask, shifting newBit to correct position, and apply
+        b->words[j] |= newBit << ((BITS_PER_WORD - 1) - (i % BITS_PER_WORD));
+        // Decrement j to move to a new word at the end of each
+        if(i != k && i % BITS_PER_WORD == 0) j--;
+    }
+    //printf("\n");
 }
 
 // display a Bits value as sequence of 0's and 1's
 void showBits(Bits b)
 {
-   // TODO
+    // Iterate over the words
+    for(int i = 0; i < b->nwords; i++) {
+        // Iterate from the Most Significant Bit to the Least Significant Bit
+        for(int j = BITS_PER_WORD - 1; j >= 0; j--) {
+            // Create a mask to select the bit we want
+            unsigned int mask = 1 << j;
+            // b->words[i] & mask: Use the mask retrieve the value at the bit we want
+            // !!(expression): Fairly hack-ish way to force an integer to be 1 or 0;
+            // the C spec states that !0 == 0 and !(non-0 integer) == 1
+            // So if done twice, 0 will become 0 and any non-0 integer will be 1
+            // There's probably a better way but I didn't feel like researching it,
+            // so came up with this on the spot
+            printf("%u", !!(b->words[i] & mask));
+        }
+    }
+    printf("\n");
 }

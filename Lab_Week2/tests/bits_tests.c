@@ -40,12 +40,12 @@ static char *test_setBitsFromString(void)
     bits = makeBits(64);
 
     setBitsFromString(bits, "0000000000000000000000000000000000000000001001001001001001001001");
-    mu_assert(bits->words[0] == 0, "Bits 0-31 do not form 32-bit integer with value 0 (had %#10x)", bits->words[0]);
-    mu_assert(bits->words[1] == 0x00249249, "Bits 32-63 do not form 32-bit integer with hex 0x00249249 (had %#10x)", bits->words[1]);
+    mu_assert(bits->words[0] == 0, "Bits 0-31 do not form 32-bit integer with value 0 (had %#010x)", bits->words[0]);
+    mu_assert(bits->words[1] == 0x00249249, "Bits 32-63 do not form 32-bit integer with hex 0x00249249 (had %#010x)", bits->words[1]);
 
     setBitsFromString(bits, "1111111111111111111111111111111111111111110111110111110111110111");
-    mu_assert(bits->words[0] == 0xFFFFFFFF, "Bits 0-31 do not form 32-bit integer with hex 0xFFFFFFFF (had %#10x)", bits->words[0]);
-    mu_assert(bits->words[1] == 0xFFDF7DF7, "Bits 32-63 do not form 32-bit integer with hex 0xFFDF7DF7 (had %#10x)", bits->words[1]);
+    mu_assert(bits->words[0] == 0xFFFFFFFF, "Bits 0-31 do not form 32-bit integer with hex 0xFFFFFFFF (had %#010x)", bits->words[0]);
+    mu_assert(bits->words[1] == 0xFFDF7DF7, "Bits 32-63 do not form 32-bit integer with hex 0xFFDF7DF7 (had %#010x)", bits->words[1]);
 
     // TODO: More tests!
 
@@ -63,22 +63,24 @@ static char *test_andBits(void)
     setBitsFromString(bits2, "1111111111111111111111111111111111111111110111110111110111110111");
     andBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after AND with inequals (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 0 after AND with inequals (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after AND with inequals (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0x41041, "Bits 32-64 are not 0 after AND with inequals (had %#010x)", bits3->words[1]);
     
     bits->words[0] = 0; bits->words[1] = 0;
     bits2->words[0] = 0; bits2->words[1] = 0;
     andBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after AND with 0s (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 0 after AND with 0s (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after AND with 0s (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 0 after AND with 0s (had %#010x)", bits3->words[1]);
 
     bits->words[0] = bits->words[1] = 0xFFFFFFFF;
     bits2->words[0] = bits2->words[1] = 0xFFFFFFFF;
     andBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after AND with 1s (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 1s after AND with 1s (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after AND with 1s (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after AND with 1s (had %#010x)", bits3->words[1]);
+
+    // TODO: Test overflows
     
     freeBits(bits);
     freeBits(bits2);
@@ -96,22 +98,22 @@ static char *test_orBits(void)
     setBitsFromString(bits2, "1111111111111111111111111111111111111111110111110111110111110111");
     orBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after OR with inequals (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after OR with inequals (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after OR with inequals (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after OR with inequals (had %#010x)", bits3->words[1]);
     
     bits->words[0] = 0; bits->words[1] = 0;
     bits2->words[0] = 0; bits2->words[1] = 0;
     orBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after OR with 0s (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 0 after OR with 0s (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0, "Bits 0-31 are not 0 after OR with 0s (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 0 after OR with 0s (had %#010x)", bits3->words[1]);
 
     bits->words[0] = bits->words[1] = 0xFFFFFFFF;
     bits2->words[0] = bits2->words[1] = 0xFFFFFFFF;
     orBits(bits, bits2, bits3);
 
-    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after OR with 1s (had %#10x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 1s after OR with 1s (had %#10x)", bits3->words[1]);
+    mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after OR with 1s (had %#010x)", bits3->words[0]);
+    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 1s after OR with 1s (had %#010x)", bits3->words[1]);
     
     freeBits(bits);
     freeBits(bits2);
@@ -127,20 +129,20 @@ static char *test_invertBits(void)
     setBitsFromString(bits,  "0000000000000000000000000000000000000000001001001001001001001001");
     invertBits(bits, bits2);
 
-    mu_assert(bits2->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after NOT with variants (had %#10x)", bits2->words[0]);
-    mu_assert(bits2->words[1] == 0xFFDF7DF7, "Bits 32-64 are not 0xFFDF7DF7 after NOT with variants (had %#10x)", bits2->words[1]);
+    mu_assert(bits2->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after NOT with variants (had %#010x)", bits2->words[0]);
+    mu_assert(bits2->words[1] == 0xFFDF7DF7, "Bits 32-64 are not 0xFFDF7DF7 after NOT with variants (had %#010x)", bits2->words[1]);
     
     bits->words[0] = 0; bits->words[1] = 0;
     invertBits(bits, bits2);
 
-    mu_assert(bits2->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after NOT with 0s (had %#10x)", bits2->words[0]);
-    mu_assert(bits2->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after NOT with 0s (had %#10x)", bits2->words[1]);
+    mu_assert(bits2->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after NOT with 0s (had %#010x)", bits2->words[0]);
+    mu_assert(bits2->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after NOT with 0s (had %#010x)", bits2->words[1]);
 
     bits->words[0] = bits->words[1] = 0xFFFFFFFF;
     invertBits(bits, bits2);
 
-    mu_assert(bits2->words[0] == 0, "Bits 0-31 are not 0s after NOT with 1s (had %#10x)", bits2->words[0]);
-    mu_assert(bits2->words[1] == 0, "Bits 32-64 are not 0s after NOT with 1s (had %#10x)", bits2->words[1]);
+    mu_assert(bits2->words[0] == 0, "Bits 0-31 are not 0s after NOT with 1s (had %#010x)", bits2->words[0]);
+    mu_assert(bits2->words[1] == 0, "Bits 32-64 are not 0s after NOT with 1s (had %#010x)", bits2->words[1]);
     
     freeBits(bits);
     freeBits(bits2);
@@ -155,8 +157,8 @@ static char *test_setBitsFromBits(void)
     setBitsFromString(bits,  "0000000000000000000000000000000000000000001001001001001001001001");
     setBitsFromBits(bits, bits2);
 
-    mu_assert(bits2->words[0] == bits->words[0], "bits and bits2 0-31 not equal after copy (%#10x, %#10x)", bits->words[0], bits2->words[0]);
-    mu_assert(bits2->words[1] == bits->words[1], "bits and bits2 32-64 not equal after copy (%#10x, %#10x)", bits->words[1], bits2->words[1]);
+    mu_assert(bits2->words[0] == bits->words[0], "bits and bits2 0-31 not equal after copy (%#010x, %#010x)", bits->words[0], bits2->words[0]);
+    mu_assert(bits2->words[1] == bits->words[1], "bits and bits2 32-64 not equal after copy (%#010x, %#010x)", bits->words[1], bits2->words[1]);
 
     freeBits(bits);
     freeBits(bits2);
