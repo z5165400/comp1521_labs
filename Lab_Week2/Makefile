@@ -162,6 +162,7 @@ check:
 # Notify build start
 pre-build:
 	@echo "[INFO] Building target $(MAKECMDGOALS) in $(notdir $(shell pwd))"
+	@rm -f $(TESTS) tests/tests.log
 
 # Notify build completion
 post-build:
