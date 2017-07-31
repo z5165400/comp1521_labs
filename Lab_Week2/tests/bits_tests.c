@@ -113,7 +113,7 @@ static char *test_orBits(void)
     orBits(bits, bits2, bits3);
 
     mu_assert(bits3->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after OR with 1s (had %#010x)", bits3->words[0]);
-    mu_assert(bits3->words[1] == 0, "Bits 32-64 are not 1s after OR with 1s (had %#010x)", bits3->words[1]);
+    mu_assert(bits3->words[1] == 0xFFFFFFFF, "Bits 32-64 are not 1s after OR with 1s (had %#010x)", bits3->words[1]);
     
     freeBits(bits);
     freeBits(bits2);
@@ -130,7 +130,7 @@ static char *test_invertBits(void)
     invertBits(bits, bits2);
 
     mu_assert(bits2->words[0] == 0xFFFFFFFF, "Bits 0-31 are not 1s after NOT with variants (had %#010x)", bits2->words[0]);
-    mu_assert(bits2->words[1] == 0xFFDF7DF7, "Bits 32-64 are not 0xFFDF7DF7 after NOT with variants (had %#010x)", bits2->words[1]);
+    mu_assert(bits2->words[1] == 0xFFDB6DB6, "Bits 32-64 are not 0xFFDB6DB6 after NOT with variants (had %#010x)", bits2->words[1]);
     
     bits->words[0] = 0; bits->words[1] = 0;
     invertBits(bits, bits2);

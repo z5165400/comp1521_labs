@@ -64,9 +64,31 @@ void andBits(Bits a, Bits b, Bits res)
     // Ensure the result Bits is equal length or larger, to contain result
     assert(res->nwords >= a->nwords);
 
-    showBits(a);
-    printf("AND\n");
-    showBits(b);
+    int i = 0;
+
+    // i is already initialised
+    // Zero out any overhanging bits of the result
+    for(i = 0; i < (res->nwords - a->nwords); i++) {
+        res->words[i] = 0;
+    }
+
+    // i is, again, already initialised, and contains the index of the
+    // first word which a, b and res have in common
+    // Which we'll store for later
+    int offset = i;
+    for(; i < res->nwords; i++) {
+        res->words[i] = a->words[i - offset] & b->words[i - offset];
+    }
+}
+
+// form bit-wise OR of two Bits a,b
+// store result in res Bits
+void orBits(Bits a, Bits b, Bits res)
+{
+    // Ensure the two OR Bits are of equal length
+    assert(a->nwords == b->nwords);
+    // Ensure the result Bits is equal length or larger, to contain result
+    assert(res->nwords >= a->nwords);
 
     int i = 0;
 
@@ -81,27 +103,32 @@ void andBits(Bits a, Bits b, Bits res)
     // Which we'll store for later
     int offset = i;
     for(; i < res->nwords; i++) {
-        struct BitsRep bitsA = { .nwords = 1, .words = &a->words[i - offset] };
-        struct BitsRep bitsB = { .nwords = 1, .words = &b->words[i - offset] };
-        showBits(&bitsA);
-        printf("AND\n");
-        showBits(&bitsB);
-        res->words[i] = a->words[i - offset] & b->words[i - offset];
+        res->words[i] = a->words[i - offset] | b->words[i - offset];
     }
-}
-
-// form bit-wise OR of two Bits a,b
-// store result in res Bits
-void orBits(Bits a, Bits b, Bits res)
-{
-   // TODO
 }
 
 // form bit-wise negation of Bits a,b
 // store result in res Bits
 void invertBits(Bits a, Bits res)
 {
-   // TODO
+    // Ensure the result Bits is equal length or larger, to contain result
+    assert(res->nwords >= a->nwords);
+
+    int i = 0;
+
+    // i is already initialised
+    // Zero out any overhanging bits of the result
+    for(i = 0; i < (res->nwords - a->nwords); i++) {
+        res->words[i] = 0;
+    }
+
+    // i is, again, already initialised, and contains the index of the
+    // first word which a, b and res have in common
+    // Which we'll store for later
+    int offset = i;
+    for(; i < res->nwords; i++) {
+        res->words[i] = ~a->words[i - offset];
+    }
 }
 
 // left shift Bits
@@ -130,8 +157,6 @@ void setBitsFromString(Bits b, char *bitseq)
     int j = b->nwords - 1;
     int k = (int)strlen(bitseq);
 
-    printf("%s\n", bitseq);
-
     // Reinitialise b to 0, in case it's already been used
     memset(b->words, 0, sizeof(unsigned int) * b->nwords);
 
@@ -144,8 +169,6 @@ void setBitsFromString(Bits b, char *bitseq)
         unsigned int newBit = 0;
         // Set LSB of newBit if the character is 1
         if(bitseq[i] == '1') newBit = 1;
-        //printf("%#010x\n", newBit << (31 - i));
-        //printf("%d\n", j);
         // Prepare bitmask, shifting newBit to correct position, and apply
         b->words[j] |= newBit << ((BITS_PER_WORD - 1) - (i % BITS_PER_WORD));
         // Decrement j to move to a new word at the end of each
