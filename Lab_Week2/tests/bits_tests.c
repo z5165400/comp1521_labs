@@ -167,19 +167,32 @@ static char *test_setBitsFromBits(void)
 
 static char *test_leftShiftBits(void)
 {
-    bits = makeBits(64);
+    bits = makeBits(96);
+    bits2 = makeBits(96);
 
-    mu_assert(0, "Test not yet implemented. Please do so.");
+    setBitsFromString(bits, "101101000010110100001011010000101101000010110100001011010000101101000010110100001011010000111111");
+    leftShiftBits(bits, 3, bits2);
+
+    mu_assert(bits2->words[0] == 0xA1685A16, "Bits 0-31 != 0xA1685A16 after left shift (had %#010x)", bits2->words[0]);
+    mu_assert(bits2->words[1] == 0x85A1685A, "Bits 32-63 != 0x85A1685A after left shift (had %#010x)", bits2->words[1]);
+    mu_assert(bits2->words[2] == 0x1685A1F8, "Bits 64-95 != 0x1685A1F8 after left shift (had %#010x)", bits2->words[2]);
 
     freeBits(bits);
+    freeBits(bits2);
     return NULL;
 }
 
 static char *test_rightShiftBits(void)
 {
-    bits = makeBits(64);
+    bits = makeBits(96);
+    bits2 = makeBits(96);
 
-    mu_assert(0, "Test not yet implemented. Please do so.");
+    setBitsFromString(bits, "101101000010110100001011010000101101000010110100001011010000101101000010110100001011010000111111");
+    rightShiftBits(bits, 3, bits2);
+
+    mu_assert(bits2->words[0] == 0x1685A168, "Bits 0-31 != 0x1685A168 after right shift (had %#010x)", bits2->words[0]);
+    mu_assert(bits2->words[1] == 0x3A1685A1, "Bits 32-63 != 0x3A1685A1 after right shift (had %#010x)", bits2->words[1]);
+    mu_assert(bits2->words[2] == 0xB85A1687, "Bits 64-95 != 0xB85A1687 after right shift (had %#010x)", bits2->words[2]);
 
     freeBits(bits);
     return NULL;
