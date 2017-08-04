@@ -202,24 +202,50 @@ void setBitsFromBits(Bits from, Bits to)
 // if the bit-string is longer than the size of Bits, truncate higher-order bits
 void setBitsFromString(Bits b, char *bitseq)
 {
-    int i = (int)strlen(bitseq) - 1;
+    // Set b to 0 before we start to use it, so any old values don't interfere with the new ones
+    for(int i = 0; i < b->nwords; i++) {
+        b->words[i] = 0;
+    }
+
+    // Iterate over bitseq, setting bits in b
+    // We use j to keep track of the current bit in b, and i to keep track of the index of bitseq
+    // i and j both start at the end, and work towards the start
     int j = b->nwords * BITS_PER_WORD - 1;
+    for(int i = (int)strlen(bitseq) - 1; i>= 0 && j >= 0; i--, j--) {
 
-    // Zero out old bits, in case it's been previously used
-    memset(b->words, 0, sizeof(uint32_t) * (uint32_t)b->nwords);
 
-    // I don't really like simultaneous counters, but it works
-    // TODO: Reconsider this, try to find a better way
-    // i is already initialised above
-    for(; i>= 0 && j >= 0; i--, j--) {
-        // Create newBit to use as a mask, and give it a value if necessary
+        /*
+            Explanation of below:
+
+            If we're 37 bits to the left of the end of bitseq, which is 64 bits long:
+            0000000001000001000101100010000000010000100000000011001000001001
+            ^63                  ^42       ^32                            ^0
+            then i will be (63 - 42) = 21, since i is from the left of bitseq
+            And if b is also 64 bits long:
+            00000000000000000000001000100000,  00010000100000000011001000001001
+            ^63   b->words[0]    ^42       ^32 ^31        b->words[1]         ^0
+            then j will be (63 - 42) = 21, since j is from the left of b
+
+            If bitseq[i] == '1', which it does, then
+            newBit = 1
+
+            We then need to set bit 42 of b to 1. To do this, we need to select b->words[0];
+            we do this by calculating (j / 32), which gives us 0
+            Once we've selected b->words[0], newBit is used to create a bitmask
+            A 1 is needed at bit 42, or bit (42 - 31 = 11) of b->words[0]
+            To reliably get the bit within the word for the general case, we use j % 32 to get the remainder of a division with 32
+            Essentially, j has two components: a + b, where b is a multiple of 32 and b is the remainder, and b is used
+            to index into b->words, and a is used to selected a bit within a selected word
+            This then gives us 21 in our example, which we subtract from 32 (32 - 21 = 11) to get the bit we need
+            Then we have newBit << 11 to make our bitmask
+
+            Then ou2 final step is b->words[0] = b->words[0] | newBit, which sets the 42nd bit of b to 1, the same as in bitseq
+        */
+
         uint32_t newBit = 0;
         if(bitseq[i] == '1') newBit = 1;
 
-        // j / BITS_PER_WORD: Current word in result
-        // j % BITS_PER_WORD: Current bit in result, counting from MSB
-        // (BITS_PER_WORD - (j % BITS_PER_WORD) - 1): Current bit in result, counting from LSB
-        // newBit << expression: Create a mask to OR with the current word, to place a 1 if necessary
+        // The 1 here is required to get the right bitmask; I haven't looked into exactly why the rest of the expression isn't correct
         b->words[j / BITS_PER_WORD] |= newBit << (BITS_PER_WORD - (j % BITS_PER_WORD) - 1);
     }
 }
