@@ -1,7 +1,7 @@
 # Makefile for COMP1521 Lab03
 
-CC=gcc
-CFLAGS=-Wall -Werror
+CC=clang
+CFLAGS+=-Wall -Werror -g
 
 all : watb maf
 
@@ -12,6 +12,6 @@ maf : make_a_float.o
 	$(CC) -o maf make_a_float.o
 
 clean :
-	rm -f watb maf where_are_the_bits.o make_a_float.o core
+	rm -f watb maf where_are_the_bits.o make_a_float.o core *.dSYM
 
 
