@@ -8,6 +8,9 @@
 
     .data
 main_ret_save: .space 4
+ascii_dot: .asciiz "."
+ascii_hash: .asciiz "#"
+ascii_nl: .asciiz "\n"
 
 
     .text
@@ -24,6 +27,7 @@ end_main:
 
 # The other functions go here
 
+# {{{ neighbours
 neighbours:
     addi $sp, -4
     sw $fp, ($sp)
@@ -73,9 +77,55 @@ nb_loop_end:
     lw $fp, ($sp)
     addi $sp, 4
     jr $ra
+# }}}
 
+# {{{ copyBackAndShow
+copyBackAndShow:
+    addi $sp, -4
+    sw $fp, ($sp)
+    move $fp, $sp
+    addi $sp, -4
+    sw $ra, ($sp)
 
+    li $t0, 0   # i
+    li $t1, 0   # j
+    lw $t2, N   # N
 
+cBAS_loop:
+    move $t3, $t0           # i
+    mul $t3, $t3, $t2       # [i]
+    add $t3, $t3, $t1       # [i][j]
+    lw $t4, newBoard($t3)
+    sw $t4, board($t3)
 
+    li $v0, 4   # print string
+    bnez $t4, cBAS_put_char
 
+    la $a0, ascii_dot
+    syscall
+    j ascii_inner_loop_end
 
+cBAS_put_hash:
+    la $a0, ascii_hash
+    syscall
+
+cBAS_inner_loop_end:
+    addi $t1, 1
+    blt $t1, $t2, cBAS_loop
+
+cBAS_loop_end:
+    li $v0, 4           # print string
+    la $a0, ascii_nl    # newline
+    syscall
+
+    addi $t0, 1
+    li $t1, 0
+    blt $t0, $t2, cBAS_loop
+
+cBAS_end:
+    lw $ra, ($sp)
+    addi $sp, 4
+    lw $fp, ($sp)
+    addi $sp, 4
+    jr $ra
+# }}}
