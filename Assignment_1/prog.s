@@ -20,6 +20,7 @@ msg_status_after:
 
     .text
     .globl main
+# {{{ main
 main:
     sw   $ra, main_ret_save
 
@@ -28,6 +29,16 @@ main:
     li $s2, 0       # i
     li $s3, 0       # j
     lw $s4, N       # N
+
+    li $v0, 4       # print string
+    la $a0, msg_iters
+    syscall
+
+    li $v0, 5       # read int
+    syscall
+    move $s0, $v0
+
+    #jal copyBackAndShow
 
 main_loop:
     move $a0, $s2
@@ -38,21 +49,21 @@ main_loop:
     li $t2, 2
     li $t3, 3
 
-    move $t0, $s2       # i
-    mul $t0, $t0, $s4   # [i]
-    add $t0, $t0, $s3   # [i][j]
-    lw $t4, board($t0)  # board[i][j]
+    move $t0, $s3       # j
+    mul $t0, $t0, $s4   # [j]
+    add $t0, $t0, $s2   # [i][j]
+    lb $t4, board($t0)  # board[i][j]
 
     beq $v0, $t3, main_loop_set1
     bne $t4, $t1, main_loop_set0
-    beq $t4, $t2, main_loop_set1
+    beq $v0, $t2, main_loop_set1
 
 main_loop_set0:
-    sw $0, board($t0)
+    sb $0, newBoard($t0)
     j main_jloop_end
 
 main_loop_set1:
-    sw $t1, board($t0)
+    sb $t1, newBoard($t0)
     j main_jloop_end
 
 main_jloop_end:
@@ -75,6 +86,8 @@ main_nloop_end:
     la $a0, msg_status_after
     syscall
 
+    jal copyBackAndShow
+
     addi $s1, 1
     li $s2, 0
     li $s3, 0
@@ -84,7 +97,7 @@ end_main:
     li   $v0, 0
     lw   $ra, main_ret_save
     jr   $ra
-
+# }}}
 
 # The other functions go here
 
@@ -101,7 +114,7 @@ neighbours:
     lw $t3, N   # N
     li $t4, 1   # 1 (terminator)
 
-    addi $t3, -1
+    addi $t7, $t3, -1 # N - 1
 
 nb_loop:
     move $t5, $a0                       # t5 = i
@@ -109,17 +122,20 @@ nb_loop:
     add $t5, $t5, $t1                   # t5 = i + x
     add $t6, $t6, $t2                   # t6 = j + y
     blt $t5, $0, nb_inner_loop_end      # if i+x < 0 continue
-    bgt $t5, $t3, nb_inner_loop_end     # if i+x > N-1 continue
+    bgt $t5, $t7, nb_inner_loop_end     # if i+x > N-1 continue
     blt $t6, $0, nb_inner_loop_end      # if j+y < 0 continue
-    bgt $t6, $t3, nb_inner_loop_end     # if j+y > N-1 continue
+    bgt $t6, $t7, nb_inner_loop_end     # if j+y > N-1 continue
 
-    beqz $t1, nb_inner_loop_end     # if x == 0 continue
-    beqz $t2, nb_inner_loop_end     # if y == 0 continue
+    bnez $t1, nb_loop_xy_nz     # if x != 0, skip to board check
+    bnez $t2, nb_loop_xy_nz     # if y != 0, skip to board check
+    j nb_inner_loop_end         # if x == 0 && y == 0 continue
 
-    mul $t5, $t5, $t3        # i+x * N to get row
-    add $t6, $t5, $t6   # (i+x * N) + i+j to get address
+nb_loop_xy_nz:
 
-    lw $t6, N($t5)      # get value
+    mul $t6, $t6, $t3        # i+x * N to get row
+    add $t5, $t5, $t6   # (i+x * N) + i+j to get address
+
+    lb $t6, board($t5)      # get value
     bne $t6, $t4, nb_inner_loop_end
 
     addi $t0, 1
@@ -156,17 +172,19 @@ cBAS_loop:
     move $t3, $t0           # i
     mul $t3, $t3, $t2       # [i]
     add $t3, $t3, $t1       # [i][j]
-    lw $t4, newBoard($t3)
-    sw $t4, board($t3)
+    lb $t4, newBoard($t3)
+    sb $t4, board($t3)
+    lb $t4, board($t3)
 
-    li $v0, 4   # print string
     bnez $t4, cBAS_put_hash
 
+    li $v0, 4       # print string
     la $a0, ascii_dot
     syscall
     j cBAS_inner_loop_end
 
 cBAS_put_hash:
+    li $v0, 4
     la $a0, ascii_hash
     syscall
 
