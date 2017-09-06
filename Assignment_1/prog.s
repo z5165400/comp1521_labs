@@ -7,6 +7,7 @@
 # Written by Andrew Walls, August 2017
 
     .data
+    .align 2
 main_ret_save: .space 4
 ascii_dot: .asciiz "."
 ascii_hash: .asciiz "#"
