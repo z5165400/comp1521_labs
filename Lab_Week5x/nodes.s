@@ -142,9 +142,22 @@ freeNode:
     sw   $ra, ($sp)
     # ... add more if needed
     # function body
-#...
+
+    li $t0, -1  # i; -1 for initial increment
+    lw $t1, N   # N
+
+fN_loop:
+    addi $t0, 1
+    # if i == N terminate
+    beq $t0, $t1, fN_end
+
+    la $t2, heap($t0)       # &heap[i]
+    bne $t2, $a0, fN_loop   # if n != &heap[i] continue
+
+    sw $0, free($t0)        # free[i] = 0
+
+fN_end:
     # epilogue
-    # ... add more if needed
     lw   $ra, ($sp)
     add  $sp, $sp, 4
     lw   $fp, ($sp)
