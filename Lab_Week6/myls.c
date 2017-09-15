@@ -12,7 +12,7 @@
 #include <sys/types.h>
 
 #define MAXDIRNAME 100
-//#define MAXFNAME   200
+#define MAXFNAME   200
 #define MAXNAME    20
 
 #define MODE_LEN 9
@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 {
     // string buffers for various names
     char dirname[MAXDIRNAME];
+    char fname[MAXFNAME];
     char uname[MAXNAME+1];
     char gname[MAXNAME+1];
     char mode[MAXNAME+1];
@@ -50,7 +51,16 @@ int main(int argc, char *argv[])
     while((entry = readdir(df))) {
         if(entry->d_name[0] == '.') continue;
 
-        lstat(entry->d_name, &info);
+        int dir_len = (int)strlen(dirname);
+        strlcpy(fname, dirname, MAXFNAME);
+        fname[dir_len] = '/';
+        strlcpy(&fname[dir_len + 1], entry->d_name, MAXFNAME - dir_len);
+
+        char *path = realpath(fname, NULL);
+
+        lstat(path, &info);
+        //printf("d_name: %s\n", entry->d_name);
+        //printf("mode: %o\n", (uint32_t)info.st_mode);
 
         switch (entry->d_type) {
             case DT_REG: printf("-");   break;
@@ -75,6 +85,7 @@ int main(int argc, char *argv[])
 // convert octal mode to -rwxrwxrwx string
 char *rwxmode(mode_t mode, char *str)
 {
+    //printf("mode: %o\n", (uint32_t)mode);
     for(int i = 0; i < MODE_LEN; i += 3) {
         for(int j = 0; j < 3; j++) {
             //printf("i: %d, j: %d, 1 << i << j: %d, MODE_LEN - i - j: %d\n", i, j, ((1 << i) << j), MODE_LEN - i - j);
@@ -92,6 +103,7 @@ char *rwxmode(mode_t mode, char *str)
             }
         }
     }
+    str[MODE_LEN] = 0;
     return str;
 }
 
