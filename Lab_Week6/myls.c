@@ -56,9 +56,9 @@ int main(int argc, char *argv[])
         fname[dir_len] = '/';
         strlcpy(&fname[dir_len + 1], entry->d_name, MAXFNAME - dir_len);
 
-        char *path = realpath(fname, NULL);
+        //char *path = realpath(fname, NULL);
 
-        lstat(path, &info);
+        lstat(fname, &info);
         //printf("d_name: %s\n", entry->d_name);
         //printf("mode: %o\n", (uint32_t)info.st_mode);
 
@@ -69,12 +69,19 @@ int main(int argc, char *argv[])
             default: printf("?");
         }
 
-        printf("%s  %-8.8s %-8.8s %8lld  %s\n",
+        printf("%s  %-8.8s %-8.8s %8lld  %s",
                 rwxmode(info.st_mode, mode),
                 username(info.st_uid, uname),
                 groupname(info.st_gid, gname),
                 (long long)info.st_size,
                 entry->d_name);
+
+        if(entry->d_type == DT_LNK) {
+            printf(" -> %s", realpath(fname, NULL));
+        }
+
+        printf("\n");
+
     }
 
     // finish up
