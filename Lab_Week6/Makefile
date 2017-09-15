@@ -1,10 +1,10 @@
 # Makefile for COMP1521 Lab06
 
-CC=dcc
-#CC=gcc
-CFLAGS=-Wall -Werror
-LDFLAGS=-lbsd
-#LDFLAGS=
+#CC=dcc
+CC=clang
+CFLAGS=-Wall -Weverything -Werror
+#LDFLAGS=-lbsd
+LDFLAGS=
 
 all : myls stat
 
