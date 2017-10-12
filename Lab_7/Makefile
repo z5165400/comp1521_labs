@@ -1,8 +1,8 @@
 # COMP1521 Lab07 Makefile
 
-CC=gcc
+CC=clang
 #CFLAGS=-std=c99 -Wall -Werror
-CFLAGS=-std=c99 -Wall -Werror -DDBUG
+CFLAGS=-std=c99 -Wall -Werror #-DDBUG
 
 mysh : mysh.c
 
