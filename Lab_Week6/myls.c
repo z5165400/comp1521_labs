@@ -20,6 +20,8 @@
 char *rwxmode(mode_t, char *);
 char *username(uid_t, char *);
 char *groupname(gid_t, char *);
+int hash(const char *str);
+int cmp_names(const void *a, const void *b, void *hashes);
 
 int main(int argc, char *argv[])
 {
@@ -134,4 +136,17 @@ char *groupname(gid_t gid, char *name)
     else
         snprintf(name, MAXNAME, "%s", ginfo->gr_name);
     return name;
+}
+
+// djb2 hashing function
+// See http://www.cse.yorku.ca/~oz/hash.html
+int hash(const char *str)
+{
+    int hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
 }
