@@ -13,6 +13,11 @@
 #include <unistd.h>
 #include <assert.h>
 
+#define PIPE_READ 0
+#define PIPE_WRITE 1
+#define STDIN_FD 0
+#define STDOUT_FD 1
+
 //extern char *strdup(char *);
 void trim(char *);
 char **tokenise(char *, char *);
@@ -23,7 +28,7 @@ void execute(char **, char **, char **);
 int main(int argc, char *argv[], char *envp[])
 {
     pid_t pid;   // pid of child process
-    int stat;    // return status of child
+    //int stat;    // return status of child
     char **path; // array of directory names
 
     // set up command PATH from environment variable
@@ -50,19 +55,66 @@ int main(int argc, char *argv[], char *envp[])
         if (strcmp(line,"exit") == 0) break;
         if (strcmp(line,"") == 0) { printf("mysh$ "); continue; }
 
-        char **args = tokenise(line, " ");
-        int fork_stat = fork();
-        // Child process
-        if(fork_stat == 0) {
-            execute(args, path, envp);
-        } else if(fork_stat > 0) {
-            pid = fork_stat;
-            stat = waitpid(pid, NULL, 0);
-        } else {
-            fprintf(stderr, "Error in fork()\n");
-            exit(EXIT_FAILURE);
+       char **cmds = tokenise(line, "|");
+
+ #ifdef DBUG
+        for (i = 0; cmds[i] != NULL;i++)
+            printf("cmds[%d] = %s\n",i,cmds[i]);
+#endif
+
+        int i = 0;
+        while(cmds[i] != NULL) i++;
+        int len = i;
+        i--;
+
+        int pipes[2];
+        int prev_pipes[2] = {-1};
+        while(i >= 0) {
+            int res = pipe(pipes);
+            if(res != 0) {
+                perror("pipe() failed");
+                exit(EXIT_FAILURE);
+            }
+
+            char **args = tokenise(cmds[i], " ");
+
+            pid = fork();
+            if(pid == 0) {
+                if(cmds[i + 1] != NULL) {
+                    res = dup2(prev_pipes[PIPE_WRITE], STDOUT_FD);
+                    if(res != 0) {
+                        perror("dup2() failed");
+                        exit(EXIT_FAILURE);
+                    }
+                    close(prev_pipes[PIPE_READ]);
+                }
+                if(i > 0) {
+                    res = dup2(pipes[PIPE_READ], STDIN_FD);
+                    if(res != 0) {
+                        perror("dup2() failed");
+                        exit(EXIT_FAILURE);
+                    }
+                    close(pipes[PIPE_WRITE]);
+                }
+                execute(args, path, envp);
+            } else if (pid == -1) {
+                perror("fork() failed\n");
+            }
+            freeTokens(args);
+            if(prev_pipes[0] != -1) {
+                close(prev_pipes[0]);
+                close(prev_pipes[1]);
+            }
+            prev_pipes[0] = pipes[0]; prev_pipes[1] = pipes[1];
+            i--;
         }
-        freeTokens(args);
+
+        freeTokens(cmds);
+        i = 0;
+        while(i < len) {
+            wait(NULL);
+            i++;
+        }
 
         printf("mysh$ ");
     }
@@ -77,7 +129,21 @@ void execute(char **args, char **path, char **envp)
 
 #ifdef DBUG
     for (int i = 0; args[i] != NULL;i++)
-        printf("args[%d] = %s\n",i,args[i]);
+        fprintf(stderr, "args[%d] = %s\n",i,args[i]);
+#endif
+#ifdef DBUG
+    fprintf(stderr, "%s: input: ", args[0]);
+    if(isatty(fileno(stdin))) {
+        fprintf(stderr, "is terminal\n");
+    } else {
+        fprintf(stderr, "is pipe\n");
+    }
+    fprintf(stderr, "%s: output: ", args[0]);
+    if(isatty(fileno(stdout))) {
+        fprintf(stderr, "is terminal\n");
+    } else {
+        fprintf(stderr, "is pipe\n");
+    }
 #endif
 
     if((args[0][0] == '/' || args[0][0] == '.') && isExecutable(args[0])) {
@@ -85,9 +151,7 @@ void execute(char **args, char **path, char **envp)
     } else {
         for(int i = 0; path[i] != NULL && cmd == NULL; i++) {
             char str[BUFSIZ];
-            strlcpy(str, path[i], BUFSIZ);
-            strlcat(str, "/", BUFSIZ);
-            strlcat(str, args[0], BUFSIZ);
+            snprintf(str, BUFSIZ, "%s/%s", path[i], args[0]);
 
             if(isExecutable(str)) {
                 cmd = str;
@@ -96,11 +160,12 @@ void execute(char **args, char **path, char **envp)
     }
 
     if(cmd == NULL) {
-        fprintf(stderr, "Command not found\n");
+        fprintf(stderr, "%s: Command not found\n", args[0]);
     } else {
-        printf("Executing %s\n", cmd);
+        fprintf(stderr, "Executing %s\n", cmd);
         execve(cmd, args, envp);
-        perror("Exec failed");
+        // If we reach here, it's because execve failed
+        perror("execve() failed");
     }
     exit(EXIT_FAILURE);
 }
