@@ -4,13 +4,13 @@
 
 #ifndef STATS_H
 
-void initStats();
-void countPeekRequest();
-void countPokeRequest();
-void countPageLoad();
-void countPageSave();
-void countPageFault();
-void countPageHit();
-void showSummaryStats();
+void initStats(void);
+void countPeekRequest(void);
+void countPokeRequest(void);
+void countPageLoad(void);
+void countPageSave(void);
+void countPageFault(void);
+void countPageHit(void);
+void showSummaryStats(void);
 
 #endif

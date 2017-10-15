@@ -31,7 +31,7 @@ static int  nFrames;
 
 void initMemory(int nf)
 {
-   Memory = malloc(nf * sizeof(MFI));
+   Memory = malloc((unsigned long)nf * sizeof(MFI));
    if (Memory == NULL) {
       fprintf(stderr, "Can't initialise Memory\n");
       exit(EXIT_FAILURE);
@@ -48,6 +48,7 @@ void initMemory(int nf)
 
 void saveFrame(int fno)
 {
+   fno = 0; // keep the compiler happy
    countPageSave();
 }
 

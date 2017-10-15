@@ -17,7 +17,7 @@
 // Operations on Memory
 
 void initMemory(int nframes);
-int  findFreeFrame();
+int  findFreeFrame(void);
 void saveFrame(int fno);
 void loadFrame(int fno, int pno, int when);
 

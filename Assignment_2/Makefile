@@ -1,8 +1,11 @@
 # Makefile for vmsim
 # COMP1521 17s2 Assignment 2
 
-CC=gcc
-CFLAGS=-Wall -Werror -std=c99 -DDBUG=1
+#CC=gcc
+#CFLAGS=-Wall -Werror -std=c99 -DDBUG=1
+CC=clang
+CFLAGS=-Wall -Wextra -Weverything -std=c99 -g -DDBUG=1 -Wno-padded -Wno-unused-parameter
+#CFLAGS=-Wall -Wextra -Weverything -std=c99 -g -Wno-padded -Wno-unused-parameter
 
 vmsim : vmsim.o Memory.o PageTable.o Stats.o
 vmsim.o : vmsim.c Memory.h PageTable.h
