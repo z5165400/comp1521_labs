@@ -1,6 +1,13 @@
 // PageTable.c ... implementation of Page Table operations
 // COMP1521 17s2 Assignment 2
 // Written by John Shepherd, September 2017
+// Completed by Andrew Walls (z5165400)
+
+// This implementation of LRU and FIFO uses two double-linked lists;
+// one stores the page table entries in order of access time for LRU,
+// and the other in order of load time for FIFO.
+// The linked lists are integrated with the page table (See the PTE definition).
+// Four global pointers are used, for the head and tail of each list.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,13 +31,16 @@ typedef struct PTE {
     int  loadTime;    // clock tick for last time loaded
     int  nPeeks;      // total number times this page read
     int  nPokes;      // total number times this page modified
-    // TODO: add more fields here, if needed ...
-    struct PTE *lru_next;
-    struct PTE *lru_prev;
-    struct PTE *fifo_next;
-    struct PTE *fifo_prev;
 
-    // TODO: Delete after testing
+    // Next item in the paging list
+    struct PTE *next;
+    // Previous item in the paging list
+    struct PTE *prev;
+
+    // Store the current page's index in the page table
+    // This is inefficient and not necessary for the program
+    // to function, but is needed for one of the DBUG outputs
+    // And hence may be required for autotesting
     int table_index;
 } PTE;
 
@@ -45,16 +55,14 @@ static int  replacePolicy;  // how to do page replacement
 static int  fifoList;       // index of first PTE in FIFO list
 static int  fifoLast;       // index of last PTE in FIFO list
 
-static PTE *lru_first;
-static PTE *lru_last;
-static PTE *fifo_first;
-static PTE *fifo_last;
+// First and last items in the paging list
+static PTE *list_first;
+static PTE *list_last;
 
 // Forward refs for private functions
 
 static PTE *findVictim(int);
-static void updateLRU(PTE *);
-static void updateFIFO(PTE *);
+static void updatePaging(PTE *);
 
 // initPageTable: create/initialise Page Table data structures
 
@@ -69,7 +77,6 @@ void initPageTable(int policy, int np)
     nPages = np;
     fifoList = 0;
     fifoLast = nPages-1;
-    //PTE *prev = NULL;
     for (int i = 0; i < nPages; i++) {
         PTE *p = &PageTable[i];
         p->status = NOT_USED;
@@ -79,30 +86,9 @@ void initPageTable(int policy, int np)
         p->loadTime = NONE;
         p->nPeeks = p->nPokes = 0;
 
-        p->fifo_next = NULL;
-        p->lru_next = NULL;
-        p->fifo_prev = NULL;
-        p->lru_prev = NULL;
-
-#if 0
-        p->fifo_prev = prev;
-        p->lru_prev = prev;
-
-        if(i == 0) {
-            lru_first = p;
-            fifo_first = p;
-        }
-        if (i == nPages - 1) {
-            lru_last = p;
-            fifo_last = p;
-        }
-
-        if(prev) {
-            prev->fifo_next = p;
-            prev->lru_next = p;
-        }
-        prev = p;
-#endif
+        // Initialise the paging list with no items
+        p->next = NULL;
+        p->prev = NULL;
 
         p->table_index = i;
     }
@@ -120,28 +106,25 @@ int requestPage(int pno, char mode, int time)
         exit(EXIT_FAILURE);
     }
     PTE *p = &PageTable[pno];
-    updateLRU(p);
+    // Any call to requestPage is an access to a page,
+    // so update the LRU list for this page
+    if(replacePolicy == REPL_LRU)
+        updatePaging(p);
     int fno; // frame number
     switch (p->status) {
         case NOT_USED:
         case ON_DISK:
-            // TODO: add stats collection
             countPageFault();
-            updateFIFO(p);
+            // The FIFO list needs updating for this page
+            // if it needs loading
+            if(replacePolicy == REPL_FIFO)
+                updatePaging(p);
             fno = findFreeFrame();
             if (fno == NONE) {
                 PTE *victim = findVictim(time);
 #ifdef DBUG
                 printf("Evict page %d\n", victim->table_index);
 #endif
-                // TODO:
-                // if victim page modified, save its frame
-                // collect frame# (fno) for victim page
-                // update PTE for victim page
-                // - new status
-                // - no longer modified
-                // - no frame mapping
-                // - not accessed, not loaded
                 fno = victim->frame;
                 if(victim->modified == 1) {
                     saveFrame(fno);
@@ -151,16 +134,9 @@ int requestPage(int pno, char mode, int time)
                 victim->frame = NONE;
                 victim->accessTime = NONE;
                 victim->loadTime = NONE;
-
             }
-            // TODO:
-            // load page pno into frame fno
-            // update PTE for page
-            // - new status
-            // - not yet modified
-            // - associated with frame fno
-            // - just loaded
-            printf("loadFrame(%d, %d, %d)\n", pno, fno, time);
+
+            //printf("loadFrame(%d, %d, %d)\n", pno, fno, time);
             loadFrame(fno, pno, time);
             p->status = IN_MEMORY;
             p->modified = 0;
@@ -181,60 +157,69 @@ int requestPage(int pno, char mode, int time)
         p->modified = 1;
     }
     p->accessTime = time;
+
     return p->frame;
+}
+
+// Update the paging list for an entry; move the given item to
+// the end of the list and juggle pointers as necessary
+// Add the item to the list if it isn't present
+static void updatePaging(PTE *entry)
+{
+    if(list_first == NULL && list_last == NULL) {
+        list_first = entry;
+        list_last = entry;
+    } else if(entry->next == NULL && entry->prev == NULL) {
+        entry->prev = list_last;
+        list_last->next = entry;
+        list_last = entry;
+    } else if(list_first == entry) {
+        list_first = entry->next;
+        entry->next->prev = NULL;
+        entry->next = NULL;
+        entry->prev = list_last;
+        list_last->next = entry;
+        list_last = entry;
+    } else if(list_last != entry) {
+        entry->prev->next = entry->next;
+        entry->next->prev = entry->prev;
+        entry->next = NULL;
+        entry->prev = list_last;
+        list_last->next = entry;
+        list_last = entry;
+    }
+}
+
+// Remove an item from the paging list
+static void removeFromPaging(PTE *entry)
+{
+    // Move the item to the end of the list
+    // This does the majority of the removal work
+    updatePaging(entry);
+    // Remove the item from the end of the list
+    if(entry == list_first)
+        list_first = entry->next;
+    if(entry->prev)
+        entry->prev->next = NULL;
+    list_last = entry->prev;
+    entry->prev = NULL;
+    entry->next = NULL;
 }
 
 // findVictim: find a page to be replaced
 // uses the configured replacement policy
 
-static void updateLRU(PTE *entry) {
-    if(lru_last != entry) {
-        if(entry->lru_prev)
-            entry->lru_prev->lru_next = entry->lru_next;
-        if(entry->lru_next)
-            entry->lru_next->lru_prev = entry->lru_prev;
-        if(lru_first == entry)
-            lru_first = entry->lru_next;
-        if(lru_last)
-            lru_last->lru_next = entry;
-        entry->lru_prev = lru_last;
-        lru_last = entry;
-        if(lru_first == NULL)
-            lru_first = entry;
-    }
-}
-
-static void updateFIFO(PTE *entry) {
-    if(fifo_last != entry) {
-        if(entry->fifo_prev)
-            entry->fifo_prev->fifo_next = entry->fifo_next;
-        if(entry->fifo_next)
-            entry->fifo_next->fifo_prev = entry->fifo_prev;
-        if(fifo_first == entry)
-            fifo_first = entry->fifo_next;
-        if(fifo_last)
-            fifo_last->fifo_next = entry;
-        entry->fifo_prev = fifo_last;
-        fifo_last = entry;
-        if(fifo_first == NULL)
-            fifo_first = entry;
-    }
-}
-
 static PTE *findVictim(int time)
 {
     PTE *victim = 0;
-    PTE *entry;
     switch (replacePolicy) {
         case REPL_LRU:
-            entry = lru_first;
-            updateLRU(entry);
-            victim = entry;
-            break;
         case REPL_FIFO:
-            entry = fifo_first;
-            updateFIFO(entry);
-            victim = entry;
+            // Select the first item in the paging list,
+            // make it the victim and remove it from the list,
+            // as it can no longer be evicted
+            victim = list_first;
+            removeFromPaging(victim);
             break;
         case REPL_CLOCK:
             return NULL;
